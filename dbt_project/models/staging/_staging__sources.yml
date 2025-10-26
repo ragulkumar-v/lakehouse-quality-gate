@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Landed by ingestion/land_raw_data.py, which writes real Apache Iceberg
+      tables (pyiceberg + SQLite catalog) and materializes the current
+      snapshot into these DuckDB tables for dbt to read. This is the exact
+      boundary the "chaos" script corrupts to prove the quality gate works.
+    schema: raw
+    tables:
+      - name: trips
+        description: Raw trip records, one row per completed trip.
+        columns:
+          - name: trip_id
+            description: Source system primary key for a trip.
+          - name: pickup_datetime
+          - name: dropoff_datetime
+          - name: fare_amount
+          - name: trip_distance
+      - name: zones
+        description: Raw pickup/dropoff zone lookup dimension.
+        columns:
+          - name: location_id
+          - name: borough
+          - name: zone

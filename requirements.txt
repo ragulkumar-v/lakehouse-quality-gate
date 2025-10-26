@@ -1,0 +1,21 @@
+# Core pipeline + test dependencies. Installs into a plain venv, fully
+# offline-capable at test time (DuckDB + local Parquet/CSV fixtures only --
+# no MinIO, no live Airflow, no network).
+#
+# Airflow is deliberately NOT in this file -- see requirements-airflow.txt
+# and dags/README below for why it lives in its own virtualenv.
+
+dbt-core==1.11.12
+dbt-duckdb==1.10.1
+duckdb==1.5.4
+great_expectations==1.19.0
+pyiceberg==0.11.1
+sqlalchemy==2.0.51  # pyiceberg's SqlCatalog (ingestion/land_raw_data.py) needs this; not pulled in by the base pyiceberg install
+pyarrow==25.0.0
+pandas==3.0.3
+requests==2.34.2
+boto3==1.43.49
+
+# dev / test tooling
+pytest==9.1.1
+ruff==0.15.22

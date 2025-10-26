@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: dim_zones
+    description: One row per pickup/dropoff zone.
+    columns:
+      - name: location_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_trips
+    description: >
+      One row per completed trip. Only built after the Great Expectations
+      gate (quality/checkpoint.py) passes against int_trips_enriched --
+      see the Airflow DAG.
+    columns:
+      - name: trip_id
+        data_tests:
+          - unique
+          - not_null
+      - name: pickup_location_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: location_id
+      - name: dropoff_location_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zones')
+                field: location_id
+      - name: payment_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+      - name: fare_amount
+        data_tests:
+          - not_null

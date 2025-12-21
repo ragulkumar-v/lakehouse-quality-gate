@@ -1,0 +1,23 @@
+# Optional, separate virtualenv for the Airflow DAG file itself
+# (dags/lakehouse_quality_gate_dag.py).
+#
+# apache-airflow pins many transitive dependencies (Flask, marshmallow,
+# connexion, colorlog, etc.) tightly enough that installing it into the same
+# environment as dbt-core/great_expectations (requirements.txt) produces
+# real, unresolvable version conflicts. This is common in production dbt+
+# Airflow setups too -- most teams run dbt inside its own container/venv
+# invoked as a subprocess or a separate KubernetesPodOperator, rather than
+# inside Airflow's own Python environment. This repo models that split
+# directly: `dags/tasks.py` (the actual task logic) has zero Airflow import
+# and is tested against requirements.txt; only `dags/lakehouse_quality_gate_dag.py`
+# (the DAG wiring) needs this file, and tests covering it
+# (tests/airflow/test_dag_structure.py) are automatically skipped when this
+# environment isn't the active one.
+#
+#   python -m venv .venv-airflow
+#   .venv-airflow/bin/pip install -r requirements-airflow.txt
+#   AIRFLOW_HOME=.airflow_home .venv-airflow/bin/python -c \
+#       "import dags.lakehouse_quality_gate_dag as m; print(m.dag.dag_id)"
+
+apache-airflow==2.10.5
+pytest==8.3.4

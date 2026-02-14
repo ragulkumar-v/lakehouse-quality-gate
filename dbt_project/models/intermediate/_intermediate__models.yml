@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: int_trips_enriched
+    description: >
+      Trips joined to pickup/dropoff zones with derived duration and
+      fare-per-mile. This is the model the Great Expectations checkpoint
+      (quality/checkpoint.py) validates before marts are allowed to build.
+    columns:
+      - name: trip_id
+        data_tests:
+          - unique
+          - not_null
+      - name: trip_duration_minutes
+        data_tests:
+          - not_null
+
+unit_tests:
+  - name: test_safe_divide_handles_zero_distance
+    description: >
+      Pins down the safe_divide macro's divide-by-zero behavior as used in
+      fare_per_mile: a zero-distance trip must yield NULL, never a SQL error
+      or an infinite value, while a normal trip computes the real ratio.
+    model: int_trips_enriched
+    given:
+      - input: ref('stg_trips')
+        rows:
+          - trip_id: 1
+            vendor_id: 1
+            pickup_at: "2025-06-01 00:00:00"
+            dropoff_at: "2025-06-01 00:10:00"
+            passenger_count: 1
+            trip_distance_miles: 0
+            pickup_location_id: 1
+            dropoff_location_id: 1
+            fare_amount: 10.0
+            tip_amount: 0.0
+            total_amount: 10.0
+            payment_type: 1
+          - trip_id: 2
+            vendor_id: 1
+            pickup_at: "2025-06-01 00:00:00"
+            dropoff_at: "2025-06-01 00:12:00"
+            passenger_count: 1
+            trip_distance_miles: 2.0
+            pickup_location_id: 1
+            dropoff_location_id: 1
+            fare_amount: 11.0
+            tip_amount: 0.0
+            total_amount: 11.0
+            payment_type: 1
+      - input: ref('stg_zones')
+        rows:
+          - location_id: 1
+            borough: "Manhattan"
+            zone: "Test Zone"
+    expect:
+      rows:
+        - trip_id: 1
+          fare_per_mile: null
+          trip_duration_minutes: 10.0
+        - trip_id: 2
+          fare_per_mile: 5.5
+          trip_duration_minutes: 12.0
+
+  - name: test_trip_duration_minutes_computes_correctly
+    description: Confirms trip_duration_minutes converts seconds to minutes correctly across an hour boundary.
+    model: int_trips_enriched
+    given:
+      - input: ref('stg_trips')
+        rows:
+          - trip_id: 3
+            vendor_id: 1
+            pickup_at: "2025-06-01 23:50:00"
+            dropoff_at: "2025-06-02 00:20:00"
+            passenger_count: 1
+            trip_distance_miles: 5.0
+            pickup_location_id: 1
+            dropoff_location_id: 1
+            fare_amount: 20.0
+            tip_amount: 0.0
+            total_amount: 20.0
+            payment_type: 1
+      - input: ref('stg_zones')
+        rows:
+          - location_id: 1
+            borough: "Manhattan"
+            zone: "Test Zone"
+    expect:
+      rows:
+        - trip_id: 3
+          trip_duration_minutes: 30.0
